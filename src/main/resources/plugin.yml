@@ -1,0 +1,31 @@
+name: AttackMastery
+version: 1.7.6
+main: com.attackmastery.AttackMastery
+api-version: 1.21
+softdepend: [LevelledMobs]
+authors: [YourName]
+description: Grindy attack skill progression via LevelledMobs kills!
+commands:
+  attack:
+    description: Attack Mastery commands
+    usage: /attack [player|reset|set]
+    aliases: [attackmastery]
+permissions:
+  attackmastery.*:
+    children:
+      attackmastery.info: true
+      attackmastery.reset: true
+      attackmastery.set: true
+      attackmastery.reload: true
+  attackmastery.info:
+    description: View other players stats
+    default: op
+  attackmastery.reset:
+    description: Reset player level
+    default: op
+  attackmastery.set:
+    description: Set player level
+    default: op
+  attackmastery.reload:
+    description: Reload config
+    default: op
