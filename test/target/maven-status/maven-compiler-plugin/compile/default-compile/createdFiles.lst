@@ -1,0 +1,8 @@
+com\attackmastery\EventListener.class
+com\attackmastery\AttackMastery.class
+com\attackmastery\CommandHandler.class
+com\attackmastery\QuestManager.class
+com\attackmastery\PlayerData.class
+com\attackmastery\QuestData.class
+com\attackmastery\QuestListener.class
+com\attackmastery\LMUtils.class
