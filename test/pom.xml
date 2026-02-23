@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.attackmastery</groupId>
-    <artifactId>AttackMastery</artifactId>
+    <artifactId>AttackMastery-test</artifactId>
     <version>1.7.6</version>
     <packaging>jar</packaging>
 

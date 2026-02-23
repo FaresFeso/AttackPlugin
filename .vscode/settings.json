@@ -1,0 +1,13 @@
+{
+  "java.server.launchMode": "Standard",
+  "java.import.maven.enabled": true,
+  "java.validate.enable": false,
+  "java.import.exclusions": [
+    "test/**",
+    "**/target/**"
+  ],
+  "java.project.sourcePaths": [
+    "src/main/java"
+  ],
+  "java.project.outputPath": "target/classes"
+}

@@ -6,14 +6,16 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.File;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Collections;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class AttackMastery extends JavaPlugin {
     private final Map<UUID, PlayerData> playerDataMap = new ConcurrentHashMap<>();
-    private final Set<UUID> dirtyPlayers = new HashSet<>();
+    private final Set<UUID> dirtyPlayers = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Map<UUID, Map<UUID, Double>> mobDamageTracking = new ConcurrentHashMap<>();
+    private EventListener eventListener;
     private QuestManager questManager;
     private File playersFile;
     private File questsFile;
@@ -25,6 +27,10 @@ public class AttackMastery extends JavaPlugin {
     public void onEnable() {
         saveDefaultConfig();
         getLogger().info("[DEBUG] Config max-level: " + getConfig().getInt("max-level", 200));
+
+        if (!getDataFolder().exists() && !getDataFolder().mkdirs()) {
+            getLogger().severe("Failed to create plugin data folder!");
+        }
         
         playersFile = new File(getDataFolder(), "players.yml");
         if (!playersFile.exists()) {
@@ -53,10 +59,15 @@ public class AttackMastery extends JavaPlugin {
         }
         
         questManager = new QuestManager(this);
+        eventListener = new EventListener(this);
         
-        getServer().getPluginManager().registerEvents(new EventListener(this), this);
+        getServer().getPluginManager().registerEvents(eventListener, this);
         getServer().getPluginManager().registerEvents(new QuestListener(this), this);
-        getCommand("attack").setExecutor(new CommandHandler(this));
+        if (getCommand("attack") != null) {
+            getCommand("attack").setExecutor(new CommandHandler(this));
+        } else {
+            getLogger().severe("Command 'attack' is missing from plugin.yml");
+        }
         
         saveTaskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(this, this::saveAllDirty, 100L, 100L);
         
@@ -113,6 +124,11 @@ public class AttackMastery extends JavaPlugin {
     public void markDirty(UUID uuid) {
         dirtyPlayers.add(uuid);
     }
+
+    public void unloadPlayerData(UUID uuid) {
+        playerDataMap.remove(uuid);
+        dirtyPlayers.remove(uuid);
+    }
     
     private void saveAllDirty() {
         for (UUID uuid : new HashSet<>(dirtyPlayers)) {
@@ -131,6 +147,10 @@ public class AttackMastery extends JavaPlugin {
     
     public QuestManager getQuestManager() {
         return questManager;
+    }
+
+    public EventListener getEventListener() {
+        return eventListener;
     }
     
     public YamlConfiguration getQuestsConfig() {

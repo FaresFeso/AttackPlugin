@@ -7,8 +7,8 @@ import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
+@SuppressWarnings("deprecation")
 public class CommandHandler implements TabExecutor {
     private final AttackMastery plugin;
     
@@ -109,7 +109,6 @@ public class CommandHandler implements TabExecutor {
                 // Apply modifiers if player is online
                 if (target.isOnline()) {
                     plugin.getServer().getScheduler().runTask(plugin, () -> {
-                        PlayerData pData = plugin.getPlayerData(target.getUniqueId());
                         org.bukkit.event.player.PlayerJoinEvent fakeEvent = new org.bukkit.event.player.PlayerJoinEvent(target, "");
                         new EventListener(plugin).onPlayerJoin(fakeEvent);
                     });

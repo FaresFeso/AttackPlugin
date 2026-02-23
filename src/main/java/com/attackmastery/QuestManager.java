@@ -92,6 +92,8 @@ public class QuestManager {
             data.setLastDailyReset(plugin.getQuestsConfig().getLong(path + ".lastDailyReset", 0));
             data.setLastWeeklyReset(plugin.getQuestsConfig().getLong(path + ".lastWeeklyReset", 0));
             data.setDailyProgress(plugin.getQuestsConfig().getInt(path + ".dailyProgress", 0));
+            data.setDailyProgress2(plugin.getQuestsConfig().getInt(path + ".dailyProgress2", 0));
+            data.setDailyProgress3(plugin.getQuestsConfig().getInt(path + ".dailyProgress3", 0));
             data.setDailyCompleted(plugin.getQuestsConfig().getBoolean(path + ".dailyCompleted", false));
             data.setWeeklyProgress1(plugin.getQuestsConfig().getInt(path + ".weeklyProgress1", 0));
             data.setWeeklyProgress2(plugin.getQuestsConfig().getInt(path + ".weeklyProgress2", 0));
@@ -114,6 +116,8 @@ public class QuestManager {
         plugin.getQuestsConfig().set(path + ".lastDailyReset", data.getLastDailyReset());
         plugin.getQuestsConfig().set(path + ".lastWeeklyReset", data.getLastWeeklyReset());
         plugin.getQuestsConfig().set(path + ".dailyProgress", data.getDailyProgress());
+        plugin.getQuestsConfig().set(path + ".dailyProgress2", data.getDailyProgress2());
+        plugin.getQuestsConfig().set(path + ".dailyProgress3", data.getDailyProgress3());
         plugin.getQuestsConfig().set(path + ".dailyCompleted", data.isDailyCompleted());
         plugin.getQuestsConfig().set(path + ".weeklyProgress1", data.getWeeklyProgress1());
         plugin.getQuestsConfig().set(path + ".weeklyProgress2", data.getWeeklyProgress2());
@@ -131,133 +135,235 @@ public class QuestManager {
         QuestData data = getQuestData(player.getUniqueId());
         PlayerData pData = plugin.getPlayerData(player.getUniqueId());
         int level = pData.getLevel();
+        boolean questDataChanged = false;
         
         // Track daily quest
         if (!data.isDailyCompleted()) {
             if (level >= 150 && entity instanceof org.bukkit.entity.Warden) {
                 data.setDailyProgress(data.getDailyProgress() + 1);
-                saveQuestData(player.getUniqueId());
+                questDataChanged = true;
                 if (data.getDailyProgress() >= 20) {
                     data.setDailyCompleted(true);
+                    questDataChanged = true;
                     rewardDaily(player, level);
-                    saveQuestData(player.getUniqueId());
                 }
             } else if (level >= 100 && entity instanceof org.bukkit.entity.Warden) {
                 data.setDailyProgress(data.getDailyProgress() + 1);
-                saveQuestData(player.getUniqueId());
+                questDataChanged = true;
                 if (data.getDailyProgress() >= 15) {
                     data.setDailyCompleted(true);
+                    questDataChanged = true;
                     rewardDaily(player, level);
-                    saveQuestData(player.getUniqueId());
                 }
             } else if (level >= 80 && entity instanceof org.bukkit.entity.Warden) {
                 data.setDailyProgress(data.getDailyProgress() + 1);
-                saveQuestData(player.getUniqueId());
+                questDataChanged = true;
                 if (data.getDailyProgress() >= 10) {
                     data.setDailyCompleted(true);
+                    questDataChanged = true;
                     rewardDaily(player, level);
-                    saveQuestData(player.getUniqueId());
                 }
             } else if (level >= 50 && entity instanceof org.bukkit.entity.Warden) {
                 data.setDailyProgress(data.getDailyProgress() + 1);
-                saveQuestData(player.getUniqueId());
+                questDataChanged = true;
                 if (data.getDailyProgress() >= 5) {
                     data.setDailyCompleted(true);
+                    questDataChanged = true;
                     rewardDaily(player, level);
-                    saveQuestData(player.getUniqueId());
                 }
             } else if (level >= 30 && entity instanceof org.bukkit.entity.Warden) {
                 data.setDailyProgress(data.getDailyProgress() + 1);
-                saveQuestData(player.getUniqueId());
+                questDataChanged = true;
                 if (data.getDailyProgress() >= 3) {
                     data.setDailyCompleted(true);
+                    questDataChanged = true;
                     rewardDaily(player, level);
-                    saveQuestData(player.getUniqueId());
                 }
             } else if (level >= 15 && entity instanceof org.bukkit.entity.Warden) {
                 data.setDailyProgress(data.getDailyProgress() + 1);
-                saveQuestData(player.getUniqueId());
+                questDataChanged = true;
                 if (data.getDailyProgress() >= 2) {
                     data.setDailyCompleted(true);
+                    questDataChanged = true;
                     rewardDaily(player, level);
-                    saveQuestData(player.getUniqueId());
                 }
             } else if (level < 15) {
                 if (entity instanceof org.bukkit.entity.Zombie) {
                     data.setDailyProgress(data.getDailyProgress() + 1);
+                    questDataChanged = true;
                 } else if (entity instanceof org.bukkit.entity.Spider) {
-                    data.setWeeklyProgress1(data.getWeeklyProgress1() + 1);
+                    data.setDailyProgress2(data.getDailyProgress2() + 1);
+                    questDataChanged = true;
                 } else if (entity instanceof org.bukkit.entity.Skeleton) {
-                    data.setWeeklyProgress2(data.getWeeklyProgress2() + 1);
+                    data.setDailyProgress3(data.getDailyProgress3() + 1);
+                    questDataChanged = true;
                 }
-                saveQuestData(player.getUniqueId());
-                if (data.getDailyProgress() >= 20 && data.getWeeklyProgress1() >= 15 && data.getWeeklyProgress2() >= 5) {
+                if (data.getDailyProgress() >= 20 && data.getDailyProgress2() >= 15 && data.getDailyProgress3() >= 5) {
                     data.setDailyCompleted(true);
+                    questDataChanged = true;
                     rewardDaily(player, level);
-                    saveQuestData(player.getUniqueId());
                 }
             }
         }
         
-        // Track weekly quests
-        if (entity instanceof org.bukkit.entity.Warden) {
-            if (!data.isWeeklyCompleted1()) {
+        // Track weekly quest 1
+        if (!data.isWeeklyCompleted1()) {
+            boolean quest1Kill = (level < 15 && entity instanceof org.bukkit.entity.Zombie)
+                || (level >= 15 && entity instanceof org.bukkit.entity.Warden);
+            if (quest1Kill) {
                 data.setWeeklyProgress1(data.getWeeklyProgress1() + 1);
-                saveQuestData(player.getUniqueId());
+                questDataChanged = true;
+                int target = getWeeklyQuest1Target(level);
+                if (data.getWeeklyProgress1() >= target) {
+                    data.setWeeklyCompleted1(true);
+                    questDataChanged = true;
+                    rewardWeekly(player, level, 1);
+                }
             }
-        } else if (entity instanceof org.bukkit.entity.Wither) {
-            if (!data.isWeeklyCompleted2()) {
+        }
+
+        // Track weekly quest 2
+        if (!data.isWeeklyCompleted2()) {
+            boolean quest2Kill = (level < 15 && entity instanceof org.bukkit.entity.Creeper)
+                || (level >= 15 && entity instanceof org.bukkit.entity.Wither);
+            if (quest2Kill) {
                 data.setWeeklyProgress2(data.getWeeklyProgress2() + 1);
-                saveQuestData(player.getUniqueId());
+                questDataChanged = true;
+                int target = getWeeklyQuest2Target(level);
+                if (data.getWeeklyProgress2() >= target) {
+                    data.setWeeklyCompleted2(true);
+                    questDataChanged = true;
+                    rewardWeekly(player, level, 2);
+                }
+            }
+        }
+
+        if (!data.isWeeklyCompleted3()) {
+            int target = getWeeklyLevelTarget(level);
+            data.setWeeklyProgress3(Math.max(data.getWeeklyProgress3(), level));
+            questDataChanged = true;
+            if (level >= target) {
+                data.setWeeklyCompleted3(true);
+                questDataChanged = true;
+                rewardWeekly(player, level, 3);
             }
         }
         
         // Track special quest
         if (!data.isSpecialCompleted() && entity instanceof org.bukkit.entity.EnderDragon) {
             data.setSpecialProgress(data.getSpecialProgress() + 1);
-            saveQuestData(player.getUniqueId());
+            questDataChanged = true;
             if (data.getSpecialProgress() >= 3) {
                 data.setSpecialCompleted(true);
+                questDataChanged = true;
                 rewardSpecial(player);
-                saveQuestData(player.getUniqueId());
             }
+        }
+
+        if (questDataChanged) {
+            saveQuestData(player.getUniqueId());
         }
     }
     
     private void rewardDaily(Player player, int level) {
+        double reward;
         if (level >= 150) {
-            plugin.getPlayerData(player.getUniqueId()).setXp(plugin.getPlayerData(player.getUniqueId()).getXp() + 50000);
+            reward = 50000;
             player.sendMessage("§a§lDaily Quest Complete! §e+50,000 XP");
         } else if (level >= 100) {
-            plugin.getPlayerData(player.getUniqueId()).setXp(plugin.getPlayerData(player.getUniqueId()).getXp() + 35000);
+            reward = 35000;
             player.sendMessage("§a§lDaily Quest Complete! §e+35,000 XP");
         } else if (level >= 80) {
             int levelsNeeded = 5;
             double xpForLevels = 0;
             for (int i = 0; i < levelsNeeded; i++) {
-                xpForLevels += 200 + ((player.getLevel() + i) * 30);
+                xpForLevels += 200 + ((level + i) * 30);
             }
-            double reward = Math.max(15000, xpForLevels);
-            plugin.getPlayerData(player.getUniqueId()).setXp(plugin.getPlayerData(player.getUniqueId()).getXp() + reward);
+            reward = Math.max(15000, xpForLevels);
             player.sendMessage("§a§lDaily Quest Complete! §e+" + (int)reward + " XP");
         } else if (level >= 50) {
-            plugin.getPlayerData(player.getUniqueId()).setXp(plugin.getPlayerData(player.getUniqueId()).getXp() + 25000);
+            reward = 25000;
             player.sendMessage("§a§lDaily Quest Complete! §e+25,000 XP");
         } else if (level >= 30) {
-            plugin.getPlayerData(player.getUniqueId()).setXp(plugin.getPlayerData(player.getUniqueId()).getXp() + 20000);
+            reward = 20000;
             player.sendMessage("§a§lDaily Quest Complete! §e+20,000 XP");
         } else if (level >= 15) {
-            plugin.getPlayerData(player.getUniqueId()).setXp(plugin.getPlayerData(player.getUniqueId()).getXp() + 15000);
+            reward = 15000;
             player.sendMessage("§a§lDaily Quest Complete! §e+15,000 XP");
         } else {
-            plugin.getPlayerData(player.getUniqueId()).setXp(plugin.getPlayerData(player.getUniqueId()).getXp() + 20000);
+            reward = 20000;
             player.sendMessage("§a§lDaily Quest Complete! §e+20,000 XP");
         }
+
+        plugin.getEventListener().grantXp(player, reward, false);
+    }
+
+    private void rewardWeekly(Player player, int level, int questIndex) {
+        double reward;
+
+        if (questIndex == 1) {
+            if (level >= 150) reward = 100000;
+            else if (level >= 100) reward = 75000;
+            else if (level >= 80) reward = 50000;
+            else if (level >= 50) reward = 40000;
+            else if (level >= 30) reward = 30000;
+            else if (level >= 15) reward = 25000;
+            else reward = 15000;
+        } else if (questIndex == 2) {
+            if (level >= 150) reward = 120000;
+            else if (level >= 100) reward = 80000;
+            else if (level >= 80) reward = 60000;
+            else if (level >= 50) reward = 45000;
+            else if (level >= 30) reward = 35000;
+            else if (level >= 15) reward = 20000;
+            else reward = 15000;
+        } else {
+            if (level >= 150) reward = 200000;
+            else if (level >= 100) reward = 150000;
+            else if (level >= 80) reward = 100000;
+            else if (level >= 50) reward = 50000;
+            else if (level >= 30) reward = 40000;
+            else if (level >= 15) reward = 30000;
+            else reward = 20000;
+        }
+
+        plugin.getEventListener().grantXp(player, reward, false);
+        player.sendMessage("§b§lWeekly Quest Complete! §e+" + (int) reward + " XP");
     }
     
     private void rewardSpecial(Player player) {
-        plugin.getPlayerData(player.getUniqueId()).setXp(plugin.getPlayerData(player.getUniqueId()).getXp() + 200000);
+        plugin.getEventListener().grantXp(player, 200000, false);
         player.sendMessage("§d§lSpecial Quest Complete! §e+200,000 XP");
+    }
+
+    private int getWeeklyQuest1Target(int level) {
+        if (level >= 150) return 50;
+        if (level >= 100) return 35;
+        if (level >= 80) return 25;
+        if (level >= 50) return 15;
+        if (level >= 30) return 10;
+        if (level >= 15) return 5;
+        return 100;
+    }
+
+    private int getWeeklyQuest2Target(int level) {
+        if (level >= 150) return 10;
+        if (level >= 100) return 7;
+        if (level >= 80) return 5;
+        if (level >= 50) return 3;
+        if (level >= 30) return 2;
+        if (level >= 15) return 1;
+        return 50;
+    }
+
+    private int getWeeklyLevelTarget(int level) {
+        if (level >= 150) return 200;
+        if (level >= 100) return 150;
+        if (level >= 80) return 100;
+        if (level >= 50) return 80;
+        if (level >= 30) return 50;
+        if (level >= 15) return 30;
+        return 15;
     }
     
     public AttackMastery getPlugin() {
@@ -332,8 +438,8 @@ public class QuestManager {
             inv.setItem(13, createQuestItem("§aKill 2 Wardens", "§7" + qData.getDailyProgress() + "/2 Wardens killed", "§e+15k XP", qData.isDailyCompleted()));
         } else {
             inv.setItem(11, createQuestItem("§aKill 20 Zombies", "§7" + qData.getDailyProgress() + "/20 Zombies killed", "§e+20k XP", false));
-            inv.setItem(13, createQuestItem("§aKill 15 Spiders", "§7" + qData.getWeeklyProgress1() + "/15 Spiders killed", "§e+20k XP", false));
-            inv.setItem(15, createQuestItem("§aKill 5 Skeletons", "§7" + qData.getWeeklyProgress2() + "/5 Skeletons killed", "§e+20k XP", qData.isDailyCompleted()));
+            inv.setItem(13, createQuestItem("§aKill 15 Spiders", "§7" + qData.getDailyProgress2() + "/15 Spiders killed", "§e+20k XP", false));
+            inv.setItem(15, createQuestItem("§aKill 5 Skeletons", "§7" + qData.getDailyProgress3() + "/5 Skeletons killed", "§e+20k XP", qData.isDailyCompleted()));
         }
         
         // Back button
@@ -352,6 +458,13 @@ public class QuestManager {
         PlayerData data = plugin.getPlayerData(player.getUniqueId());
         QuestData qData = getQuestData(player.getUniqueId());
         int level = data.getLevel();
+
+        if (!qData.isWeeklyCompleted3() && level >= getWeeklyLevelTarget(level)) {
+            qData.setWeeklyCompleted3(true);
+            qData.setWeeklyProgress3(level);
+            rewardWeekly(player, level, 3);
+            saveQuestData(player.getUniqueId());
+        }
         
         // Level-based weekly quests
         if (level >= 150) {

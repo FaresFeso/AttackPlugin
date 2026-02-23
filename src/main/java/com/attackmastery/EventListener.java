@@ -1,4 +1,4 @@
-ionpackage com.attackmastery;
+package com.attackmastery;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Particle;
@@ -18,6 +18,7 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.UUID;
 
@@ -103,10 +104,19 @@ public class EventListener implements Listener {
         Map<UUID, Double> damageMap = plugin.getDamageTracking(entity.getUniqueId());
         
         if (damageMap != null && !damageMap.isEmpty()) {
+            double totalDamage = damageMap.values().stream().mapToDouble(Double::doubleValue).sum();
+            if (totalDamage <= 0.0) {
+                totalDamage = 1.0;
+            }
             for (Map.Entry<UUID, Double> entry : damageMap.entrySet()) {
                 Player player = Bukkit.getPlayer(entry.getKey());
                 if (player != null && player.isOnline()) {
-                    giveXp(player, baseXp);
+                    double contribution = Math.max(0.0, entry.getValue()) / totalDamage;
+                    double xpShare = baseXp * contribution;
+                    if (xpShare <= 0.0) {
+                        continue;
+                    }
+                    giveXp(player, xpShare);
                     plugin.getQuestManager().trackMobKill(player, entity);
                 }
             }
@@ -118,8 +128,16 @@ public class EventListener implements Listener {
             }
         }
     }
+
+    public void grantXp(Player player, double xpGain, boolean showXpGainMessage) {
+        giveXp(player, xpGain, showXpGainMessage);
+    }
     
     private void giveXp(Player player, double xpGain) {
+        giveXp(player, xpGain, true);
+    }
+
+    private void giveXp(Player player, double xpGain, boolean showXpGainMessage) {
         PlayerData data = plugin.getPlayerData(player.getUniqueId());
         data.setXp(data.getXp() + xpGain);
         
@@ -150,7 +168,7 @@ public class EventListener implements Listener {
         if (levelsGained > 0) {
             player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
             player.spawnParticle(Particle.TOTEM_OF_UNDYING, player.getLocation().add(0, 1, 0), 30, 0.5, 0.5, 0.5, 0.1);
-        } else {
+        } else if (showXpGainMessage) {
             String msg = plugin.getConfig().getString("messages.xp-gain", "&a+%.1f XP (%d/%d)");
             player.sendMessage(String.format(msg, xpGain, data.getLevel(), maxLevel).replace('&', '§'));
         }
@@ -184,18 +202,7 @@ public class EventListener implements Listener {
     
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
-        Player player = event.getPlayer();
-        PlayerData data = plugin.getPlayerData(player.getUniqueId());
-        
-        data.setXpNeeded(calculateXpNeeded(data.getLevel()));
-        applyDamageModifier(player, data.getLevel());
-        applyHealthBonus(player, data.getLevel());
-        
-        BossBar bossBar = Bukkit.createBossBar("", BarColor.PINK, BarStyle.SEGMENTED_10);
-        bossBar.addPlayer(player);
-        data.setBossBar(bossBar);
-        
-        updateBossBar(player, data);
+        refreshPlayerStats(event.getPlayer());
     }
     
     @EventHandler
@@ -209,6 +216,23 @@ public class EventListener implements Listener {
         }
         
         plugin.savePlayerData(player.getUniqueId());
+        plugin.unloadPlayerData(player.getUniqueId());
+    }
+
+    public void refreshPlayerStats(Player player) {
+        PlayerData data = plugin.getPlayerData(player.getUniqueId());
+
+        data.setXpNeeded(calculateXpNeeded(data.getLevel()));
+        applyDamageModifier(player, data.getLevel());
+        applyHealthBonus(player, data.getLevel());
+
+        if (data.getBossBar() == null) {
+            BossBar bossBar = Bukkit.createBossBar("", BarColor.PINK, BarStyle.SEGMENTED_10);
+            bossBar.addPlayer(player);
+            data.setBossBar(bossBar);
+        }
+
+        updateBossBar(player, data);
     }
     
     private double calculateXpNeeded(int level) {
@@ -224,28 +248,24 @@ public class EventListener implements Listener {
             
             UUID modId = UUID.nameUUIDFromBytes("AttackMastery.Health".getBytes());
             
-            attr.getModifiers().stream()
-                .filter(m -> m.getKey().toString().equals(modId.toString()))
-                .findFirst()
-                .ifPresent(m -> attr.removeModifier(m.getKey()));
+            for (AttributeModifier modifier : new ArrayList<>(attr.getModifiers())) {
+                if (modifier.getKey().toString().equals(modId.toString())) {
+                    attr.removeModifier(modifier.getKey());
+                }
+            }
             
             if (level > 0) {
-                int hearts = Math.min(level / 10, 10); // Cap at 10 bonus hearts (20 total)
-                plugin.getLogger().info("[DEBUG] Applying health bonus - Level: " + level + ", Hearts: " + hearts);
+                int hearts = Math.min(level / 10, 10);
                 if (hearts > 0) {
                     double healthBonus = hearts * plugin.getConfig().getDouble("health-per-10-levels", 2.0);
-                    plugin.getLogger().info("[DEBUG] Health bonus amount: " + healthBonus);
-
-                   
                     AttributeModifier mod = new AttributeModifier(modId, "AttackMastery.Health", healthBonus, 
                         AttributeModifier.Operation.ADD_NUMBER, org.bukkit.inventory.EquipmentSlotGroup.ANY);
                     attr.addModifier(mod);
-                    plugin.getLogger().info("[DEBUG] Max health after: " + attr.getValue());
                     player.setHealth(Math.min(player.getHealth(), attr.getValue()));
                 }
             }
         } catch (Exception e) {
-            plugin.getLogger().warning("[DEBUG] Error applying health bonus: " + e.getMessage());
+            // Silently ignore attribute errors
         }
     }
     

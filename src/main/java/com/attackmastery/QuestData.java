@@ -6,6 +6,8 @@ public class QuestData {
     
     // Daily quest progress
     private int dailyProgress;
+    private int dailyProgress2;
+    private int dailyProgress3;
     private boolean dailyCompleted;
     
     // Weekly quest progress
@@ -24,6 +26,8 @@ public class QuestData {
         this.lastDailyReset = 0;
         this.lastWeeklyReset = 0;
         this.dailyProgress = 0;
+        this.dailyProgress2 = 0;
+        this.dailyProgress3 = 0;
         this.dailyCompleted = false;
         this.weeklyProgress1 = 0;
         this.weeklyProgress2 = 0;
@@ -43,6 +47,12 @@ public class QuestData {
     
     public int getDailyProgress() { return dailyProgress; }
     public void setDailyProgress(int progress) { this.dailyProgress = progress; }
+
+    public int getDailyProgress2() { return dailyProgress2; }
+    public void setDailyProgress2(int progress) { this.dailyProgress2 = progress; }
+
+    public int getDailyProgress3() { return dailyProgress3; }
+    public void setDailyProgress3(int progress) { this.dailyProgress3 = progress; }
     
     public boolean isDailyCompleted() { return dailyCompleted; }
     public void setDailyCompleted(boolean completed) { this.dailyCompleted = completed; }
@@ -73,6 +83,8 @@ public class QuestData {
     
     public void resetDaily() {
         this.dailyProgress = 0;
+        this.dailyProgress2 = 0;
+        this.dailyProgress3 = 0;
         this.dailyCompleted = false;
     }
     

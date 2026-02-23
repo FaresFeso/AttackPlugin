@@ -11,6 +11,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
 
+@SuppressWarnings("deprecation")
 public class QuestManager {
     private final AttackMastery plugin;
     private final Map<UUID, QuestData> questDataMap = new HashMap<>();
