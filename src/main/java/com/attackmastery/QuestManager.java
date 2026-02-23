@@ -130,6 +130,12 @@ public class QuestManager {
         
         plugin.saveQuestsConfig();
     }
+
+    public void saveAllQuestData() {
+        for (UUID uuid : new ArrayList<>(questDataMap.keySet())) {
+            saveQuestData(uuid);
+        }
+    }
     
     public void trackMobKill(Player player, LivingEntity entity) {
         QuestData data = getQuestData(player.getUniqueId());
@@ -240,8 +246,11 @@ public class QuestManager {
 
         if (!data.isWeeklyCompleted3()) {
             int target = getWeeklyLevelTarget(level);
-            data.setWeeklyProgress3(Math.max(data.getWeeklyProgress3(), level));
-            questDataChanged = true;
+            int newProgress = Math.max(data.getWeeklyProgress3(), level);
+            if (newProgress != data.getWeeklyProgress3()) {
+                data.setWeeklyProgress3(newProgress);
+                questDataChanged = true;
+            }
             if (level >= target) {
                 data.setWeeklyCompleted3(true);
                 questDataChanged = true;
@@ -437,8 +446,8 @@ public class QuestManager {
         } else if (level >= 15) {
             inv.setItem(13, createQuestItem("§aKill 2 Wardens", "§7" + qData.getDailyProgress() + "/2 Wardens killed", "§e+15k XP", qData.isDailyCompleted()));
         } else {
-            inv.setItem(11, createQuestItem("§aKill 20 Zombies", "§7" + qData.getDailyProgress() + "/20 Zombies killed", "§e+20k XP", false));
-            inv.setItem(13, createQuestItem("§aKill 15 Spiders", "§7" + qData.getDailyProgress2() + "/15 Spiders killed", "§e+20k XP", false));
+            inv.setItem(11, createQuestItem("§aKill 20 Zombies", "§7" + qData.getDailyProgress() + "/20 Zombies killed", "§e+20k XP", qData.isDailyCompleted()));
+            inv.setItem(13, createQuestItem("§aKill 15 Spiders", "§7" + qData.getDailyProgress2() + "/15 Spiders killed", "§e+20k XP", qData.isDailyCompleted()));
             inv.setItem(15, createQuestItem("§aKill 5 Skeletons", "§7" + qData.getDailyProgress3() + "/5 Skeletons killed", "§e+20k XP", qData.isDailyCompleted()));
         }
         

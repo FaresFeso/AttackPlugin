@@ -43,6 +43,9 @@ public class CommandHandler implements TabExecutor {
                 return true;
             }
             plugin.reloadConfig();
+            for (Player online : Bukkit.getOnlinePlayers()) {
+                plugin.getEventListener().refreshPlayerStats(online);
+            }
             sender.sendMessage("§aConfig reloaded!");
             return true;
         }
@@ -66,6 +69,7 @@ public class CommandHandler implements TabExecutor {
             data.setXp(0);
             data.setXpNeeded(plugin.getConfig().getInt("xp-base", 200));
             plugin.savePlayerData(target.getUniqueId());
+            plugin.getEventListener().refreshPlayerStats(target);
             sender.sendMessage("§aReset " + target.getName() + "'s attack level!");
             return true;
         }
@@ -142,7 +146,8 @@ public class CommandHandler implements TabExecutor {
         sender.sendMessage("§eHealth Bonus: §f+" + Math.min(data.getLevel() / 10, 10) + " Hearts (Max: 10)");
         if (data.getLevel() > 100) {
             int levelsAbove = data.getLevel() - 100;
-            double reduction = Math.min(levelsAbove * 0.5, 50.0);
+            double reductionPerLevelPercent = plugin.getConfig().getDouble("damage-reduction-per-level-after-100", 0.005) * 100.0;
+            double reduction = Math.min(levelsAbove * reductionPerLevelPercent, 50.0);
             sender.sendMessage("§eDamage Reduction: §f" + String.format("%.1f", reduction) + "%");
         }
     }

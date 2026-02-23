@@ -18,6 +18,7 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import java.util.IllegalFormatException;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.UUID;
@@ -69,11 +70,10 @@ public class EventListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityDamageBonus(EntityDamageByEntityEvent event) {
         if (event.isCancelled()) return;
-        
+        if (!(event.getDamager() instanceof Projectile)) return;
+
         Player player = null;
-        if (event.getDamager() instanceof Player) {
-            player = (Player) event.getDamager();
-        } else if (event.getDamager() instanceof Projectile) {
+        if (event.getDamager() instanceof Projectile) {
             Projectile proj = (Projectile) event.getDamager();
             if (proj.getShooter() instanceof Player) {
                 player = (Player) proj.getShooter();
@@ -156,11 +156,11 @@ public class EventListener implements Listener {
             
             applyDamageModifier(player, data.getLevel());
             applyHealthBonus(player, data.getLevel());
-            
+
             double damagePercent = data.getLevel() * plugin.getConfig().getDouble("damage-per-level", 0.05) * 100;
             int hearts = Math.min(data.getLevel() / 10, 10);
             String msg = plugin.getConfig().getString("messages.level-up", "&6Attack Mastery Level Up! &eLevel %d &7(+%.0f%% Damage, +%d Hearts)");
-            player.sendMessage(String.format(msg, data.getLevel(), damagePercent, hearts).replace('&', '§'));
+            player.sendMessage(formatLevelUpMessage(msg, data.getLevel(), damagePercent, hearts).replace('&', '§'));
         }
         
         data.setXpNeeded(base + (data.getLevel() * increment));
@@ -170,7 +170,7 @@ public class EventListener implements Listener {
             player.spawnParticle(Particle.TOTEM_OF_UNDYING, player.getLocation().add(0, 1, 0), 30, 0.5, 0.5, 0.5, 0.1);
         } else if (showXpGainMessage) {
             String msg = plugin.getConfig().getString("messages.xp-gain", "&a+%.1f XP (%d/%d)");
-            player.sendMessage(String.format(msg, xpGain, data.getLevel(), maxLevel).replace('&', '§'));
+            player.sendMessage(formatXpGainMessage(msg, xpGain, data.getLevel(), maxLevel).replace('&', '§'));
         }
         
         updateBossBar(player, data);
@@ -303,5 +303,21 @@ public class EventListener implements Listener {
         
         double progress = data.getXpNeeded() > 0 ? Math.min(data.getXp() / data.getXpNeeded(), 1.0) : 1.0;
         bar.setProgress(progress);
+    }
+
+    private String formatLevelUpMessage(String template, int level, double damagePercent, int hearts) {
+        try {
+            return String.format(template, level, damagePercent, hearts);
+        } catch (IllegalFormatException e) {
+            return String.format("&6Attack Mastery Level Up! &eLevel %d &7(+%.0f%% Damage, +%d Hearts)", level, damagePercent, hearts);
+        }
+    }
+
+    private String formatXpGainMessage(String template, double xpGain, int level, int maxLevel) {
+        try {
+            return String.format(template, xpGain, level, maxLevel);
+        } catch (IllegalFormatException e) {
+            return String.format("&a+%.1f XP (%d/%d)", xpGain, level, maxLevel);
+        }
     }
 }

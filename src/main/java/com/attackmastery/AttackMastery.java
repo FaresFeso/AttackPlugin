@@ -79,6 +79,10 @@ public class AttackMastery extends JavaPlugin {
         if (saveTaskId != -1) {
             Bukkit.getScheduler().cancelTask(saveTaskId);
         }
+
+        if (questManager != null) {
+            questManager.saveAllQuestData();
+        }
         
         for (UUID uuid : playerDataMap.keySet()) {
             savePlayerData(uuid);
