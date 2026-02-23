@@ -145,3 +145,6 @@ public class AttackMastery extends JavaPlugin {
         }
     }
 }
+
+
+print("Hello World");
