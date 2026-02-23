@@ -96,7 +96,7 @@ public class AttackMastery extends JavaPlugin {
     public void savePlayerData(UUID uuid) {
         PlayerData data = playerDataMap.get(uuid);
         if (data == null) return;
-        print("Fares is a femboy and he loves to get fucked by big black brown dicks");
+
         String path = uuid.toString();
         playersConfig.set(path + ".level", data.getLevel());
         playersConfig.set(path + ".xp", data.getXp());
