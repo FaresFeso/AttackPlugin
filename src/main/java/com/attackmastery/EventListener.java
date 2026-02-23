@@ -1,4 +1,4 @@
-package com.attackmastery;
+ionpackage com.attackmastery;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Particle;
@@ -18,8 +18,6 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -63,9 +61,7 @@ public class EventListener implements Listener {
             int levelsAbove100 = data.getLevel() - 100;
             double reduction = levelsAbove100 * plugin.getConfig().getDouble("damage-reduction-per-level-after-100", 0.005);
             reduction = Math.min(reduction, 0.5); // Cap at 50% reduction
-            double originalDamage = event.getDamage();
-            event.setDamage(originalDamage * (1.0 - reduction));
-            player.sendActionBar("§7Damage Reduced: §c" + String.format("%.1f", originalDamage) + " §7→ §a" + String.format("%.1f", event.getDamage()) + " §7(-" + String.format("%.0f", reduction * 100) + "%)");
+            event.setDamage(event.getDamage() * (1.0 - reduction));
         }
     }
     
@@ -228,28 +224,28 @@ public class EventListener implements Listener {
             
             UUID modId = UUID.nameUUIDFromBytes("AttackMastery.Health".getBytes());
             
-            List<AttributeModifier> toRemove = new ArrayList<>();
-            for (AttributeModifier mod : attr.getModifiers()) {
-                if (mod.getKey().toString().equals(modId.toString())) {
-                    toRemove.add(mod);
-                }
-            }
-            for (AttributeModifier mod : toRemove) {
-                attr.removeModifier(mod.getKey());
-            }
+            attr.getModifiers().stream()
+                .filter(m -> m.getKey().toString().equals(modId.toString()))
+                .findFirst()
+                .ifPresent(m -> attr.removeModifier(m.getKey()));
             
             if (level > 0) {
-                int hearts = Math.min(level / 10, 10);
+                int hearts = Math.min(level / 10, 10); // Cap at 10 bonus hearts (20 total)
+                plugin.getLogger().info("[DEBUG] Applying health bonus - Level: " + level + ", Hearts: " + hearts);
                 if (hearts > 0) {
                     double healthBonus = hearts * plugin.getConfig().getDouble("health-per-10-levels", 2.0);
+                    plugin.getLogger().info("[DEBUG] Health bonus amount: " + healthBonus);
+
+                   
                     AttributeModifier mod = new AttributeModifier(modId, "AttackMastery.Health", healthBonus, 
                         AttributeModifier.Operation.ADD_NUMBER, org.bukkit.inventory.EquipmentSlotGroup.ANY);
                     attr.addModifier(mod);
+                    plugin.getLogger().info("[DEBUG] Max health after: " + attr.getValue());
                     player.setHealth(Math.min(player.getHealth(), attr.getValue()));
                 }
             }
         } catch (Exception e) {
-            // Silently ignore
+            plugin.getLogger().warning("[DEBUG] Error applying health bonus: " + e.getMessage());
         }
     }
     
