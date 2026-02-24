@@ -7,5 +7,5 @@ health-per-10-levels: 2.0
 damage-reduction-per-level-after-100: 0.005
 messages:
   xp-gain: "&a+%.1f XP (%d/%d)"
-  level-up: "&6Attack Mastery Level Up! &eLevel %d &7(+%.0f%% Damage)"
+  level-up: "&6Attack Mastery Level Up! &eLevel %d &7(+%.0f%% Damage, +%d Hearts)"
   no-lm: "&cAttackMastery requires LevelledMobs!"
