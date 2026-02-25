@@ -8,7 +8,7 @@ description: Grindy attack skill progression via LevelledMobs kills!
 commands:
   attack:
     description: Attack Mastery commands
-    usage: /attack [player|reset|set]
+    usage: /attack [help|player|quest|path|reset|set]
     aliases: [attackmastery]
 permissions:
   attackmastery.*:

@@ -5,6 +5,27 @@ xp-increment: 30
 damage-per-level: 0.05
 health-per-10-levels: 2.0
 damage-reduction-per-level-after-100: 0.005
+mastery:
+  unlock-level: 25
+  max-level: 30
+  respec-cost-levels: 5
+  xp-base: 220
+  xp-increment: 130
+  xp-from-kill-multiplier: 0.12
+  objective-complete-xp: 120.0
+  sword:
+    chain-bonus-per-hit: 0.04
+  axe:
+    bleed-chance: 0.25
+    bleed-bonus-damage-multiplier: 0.20
+  bow:
+    precision-distance: 18.0
+    precision-bonus: 0.25
+  crit:
+    execute-threshold: 0.30
+    execute-bonus: 0.35
+    random-crit-chance: 0.20
+    random-crit-multiplier: 1.60
 messages:
   xp-gain: "&a+%.1f XP (%d/%d)"
   level-up: "&6Attack Mastery Level Up! &eLevel %d &7(+%.0f%% Damage, +%d Hearts)"

@@ -1,10 +1,14 @@
 package com.attackmastery;
 
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Collections;
 import java.util.Set;
@@ -22,6 +26,30 @@ public class AttackMastery extends JavaPlugin {
     private YamlConfiguration playersConfig;
     private YamlConfiguration questsConfig;
     private int saveTaskId = -1;
+
+    public static class LeaderboardEntry {
+        private final String name;
+        private final int level;
+        private final int masteryLevel;
+
+        public LeaderboardEntry(String name, int level, int masteryLevel) {
+            this.name = name;
+            this.level = level;
+            this.masteryLevel = masteryLevel;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public int getLevel() {
+            return level;
+        }
+
+        public int getMasteryLevel() {
+            return masteryLevel;
+        }
+    }
     
     @Override
     public void onEnable() {
@@ -101,6 +129,19 @@ public class AttackMastery extends JavaPlugin {
         double xp = playersConfig.getDouble(path + ".xp", 0.0);
         
         PlayerData data = new PlayerData(level, xp);
+        data.setMasteryPath(MasteryPath.fromString(playersConfig.getString(path + ".mastery.path", "NONE")));
+        data.setMasteryLevel(playersConfig.getInt(path + ".mastery.level", 0));
+        data.setMasteryXp(playersConfig.getDouble(path + ".mastery.xp", 0.0));
+        data.setMasteryObjective(playersConfig.getString(path + ".mastery.objective", ""));
+        data.setMasteryObjectiveProgress(playersConfig.getInt(path + ".mastery.objectiveProgress", 0));
+        data.setMasteryObjectiveTarget(playersConfig.getInt(path + ".mastery.objectiveTarget", 0));
+        data.setMasteryRespecs(playersConfig.getInt(path + ".mastery.respecs", 0));
+        data.setCosmeticTitle(playersConfig.getString(path + ".mastery.title", ""));
+
+        if (data.getMasteryPath() != MasteryPath.NONE && data.getMasteryObjectiveTarget() <= 0) {
+            questManager.initializeMasteryObjective(data);
+        }
+
         int base = getConfig().getInt("xp-base", 200);
         int increment = getConfig().getInt("xp-increment", 30);
         data.setXpNeeded(base + (level * increment));
@@ -115,6 +156,14 @@ public class AttackMastery extends JavaPlugin {
         String path = uuid.toString();
         playersConfig.set(path + ".level", data.getLevel());
         playersConfig.set(path + ".xp", data.getXp());
+        playersConfig.set(path + ".mastery.path", data.getMasteryPath().name());
+        playersConfig.set(path + ".mastery.level", data.getMasteryLevel());
+        playersConfig.set(path + ".mastery.xp", data.getMasteryXp());
+        playersConfig.set(path + ".mastery.objective", data.getMasteryObjective());
+        playersConfig.set(path + ".mastery.objectiveProgress", data.getMasteryObjectiveProgress());
+        playersConfig.set(path + ".mastery.objectiveTarget", data.getMasteryObjectiveTarget());
+        playersConfig.set(path + ".mastery.respecs", data.getMasteryRespecs());
+        playersConfig.set(path + ".mastery.title", data.getCosmeticTitle());
         
         try {
             playersConfig.save(playersFile);
@@ -167,6 +216,42 @@ public class AttackMastery extends JavaPlugin {
         } catch (Exception e) {
             getLogger().severe("Failed to save quests.yml!");
         }
+    }
+
+    public List<LeaderboardEntry> getTopPlayers(int limit) {
+        Map<UUID, LeaderboardEntry> entries = new ConcurrentHashMap<>();
+
+        for (String rawKey : playersConfig.getKeys(false)) {
+            try {
+                UUID uuid = UUID.fromString(rawKey);
+                OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(uuid);
+                String name = offlinePlayer.getName() != null ? offlinePlayer.getName() : rawKey.substring(0, 8);
+                int level = playersConfig.getInt(rawKey + ".level", 0);
+                int masteryLevel = playersConfig.getInt(rawKey + ".mastery.level", 0);
+                entries.put(uuid, new LeaderboardEntry(name, level, masteryLevel));
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+
+        for (Map.Entry<UUID, PlayerData> entry : playerDataMap.entrySet()) {
+            UUID uuid = entry.getKey();
+            PlayerData data = entry.getValue();
+            OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(uuid);
+            String name = offlinePlayer.getName() != null ? offlinePlayer.getName() : uuid.toString().substring(0, 8);
+            entries.put(uuid, new LeaderboardEntry(name, data.getLevel(), data.getMasteryLevel()));
+        }
+
+        List<LeaderboardEntry> sorted = new ArrayList<>(entries.values());
+        sorted.sort(
+            Comparator.comparingInt(LeaderboardEntry::getLevel)
+                .thenComparingInt(LeaderboardEntry::getMasteryLevel)
+                .reversed()
+        );
+
+        if (sorted.size() > limit) {
+            return sorted.subList(0, limit);
+        }
+        return sorted;
     }
 }
 

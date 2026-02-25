@@ -1,8 +1,11 @@
-com/attackmastery/CommandHandler.class
-com/attackmastery/AttackMastery.class
+com/attackmastery/QuestManager$1.class
 com/attackmastery/QuestData.class
 com/attackmastery/EventListener.class
+com/attackmastery/CommandHandler.class
+com/attackmastery/AttackMastery.class
 com/attackmastery/QuestManager.class
+com/attackmastery/MasteryPath.class
+com/attackmastery/EventListener$1.class
 com/attackmastery/PlayerData.class
 com/attackmastery/LMUtils.class
 com/attackmastery/QuestListener.class

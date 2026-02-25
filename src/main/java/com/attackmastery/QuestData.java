@@ -21,6 +21,9 @@ public class QuestData {
     // Special quest progress
     private int specialProgress;
     private boolean specialCompleted;
+
+    private int pathQuestProgress;
+    private boolean pathQuestCompleted;
     
     public QuestData() {
         this.lastDailyReset = 0;
@@ -37,6 +40,8 @@ public class QuestData {
         this.weeklyCompleted3 = false;
         this.specialProgress = 0;
         this.specialCompleted = false;
+        this.pathQuestProgress = 0;
+        this.pathQuestCompleted = false;
     }
     
     public long getLastDailyReset() { return lastDailyReset; }
@@ -80,12 +85,20 @@ public class QuestData {
     
     public boolean isSpecialCompleted() { return specialCompleted; }
     public void setSpecialCompleted(boolean completed) { this.specialCompleted = completed; }
+
+    public int getPathQuestProgress() { return pathQuestProgress; }
+    public void setPathQuestProgress(int pathQuestProgress) { this.pathQuestProgress = pathQuestProgress; }
+
+    public boolean isPathQuestCompleted() { return pathQuestCompleted; }
+    public void setPathQuestCompleted(boolean pathQuestCompleted) { this.pathQuestCompleted = pathQuestCompleted; }
     
     public void resetDaily() {
         this.dailyProgress = 0;
         this.dailyProgress2 = 0;
         this.dailyProgress3 = 0;
         this.dailyCompleted = false;
+        this.pathQuestProgress = 0;
+        this.pathQuestCompleted = false;
     }
     
     public void resetWeekly() {

@@ -31,8 +31,10 @@ public class QuestListener implements Listener {
                 plugin.getQuestManager().openWeeklyQuests(player);
             } else if (name.contains("Special Quests")) {
                 plugin.getQuestManager().openSpecialQuests(player);
+            } else if (name.contains("Path Contracts")) {
+                plugin.getQuestManager().openPathQuests(player);
             }
-        } else if (title.contains("Daily Quests") || title.contains("Weekly Quests") || title.contains("Special Quests")) {
+        } else if (title.contains("Daily Quests") || title.contains("Weekly Quests") || title.contains("Special Quests") || title.contains("Path Contracts")) {
             event.setCancelled(true);
             ItemStack clicked = event.getCurrentItem();
             if (clicked == null || !clicked.hasItemMeta()) return;

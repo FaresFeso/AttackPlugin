@@ -103,6 +103,8 @@ public class QuestManager {
             data.setWeeklyCompleted3(plugin.getQuestsConfig().getBoolean(path + ".weeklyCompleted3", false));
             data.setSpecialProgress(plugin.getQuestsConfig().getInt(path + ".specialProgress", 0));
             data.setSpecialCompleted(plugin.getQuestsConfig().getBoolean(path + ".specialCompleted", false));
+            data.setPathQuestProgress(plugin.getQuestsConfig().getInt(path + ".pathQuestProgress", 0));
+            data.setPathQuestCompleted(plugin.getQuestsConfig().getBoolean(path + ".pathQuestCompleted", false));
         }
         
         return data;
@@ -127,6 +129,8 @@ public class QuestManager {
         plugin.getQuestsConfig().set(path + ".weeklyCompleted3", data.isWeeklyCompleted3());
         plugin.getQuestsConfig().set(path + ".specialProgress", data.getSpecialProgress());
         plugin.getQuestsConfig().set(path + ".specialCompleted", data.isSpecialCompleted());
+        plugin.getQuestsConfig().set(path + ".pathQuestProgress", data.getPathQuestProgress());
+        plugin.getQuestsConfig().set(path + ".pathQuestCompleted", data.isPathQuestCompleted());
         
         plugin.saveQuestsConfig();
     }
@@ -417,10 +421,22 @@ public class QuestManager {
         specialLore.add("§eClick to view");
         specialMeta.setLore(specialLore);
         special.setItemMeta(specialMeta);
+
+        ItemStack pathContracts = new ItemStack(Material.NETHER_STAR);
+        ItemMeta pathMeta = pathContracts.getItemMeta();
+        pathMeta.setDisplayName("§6§lPath Contracts");
+        List<String> pathLore = new ArrayList<>();
+        pathLore.add("§7Path-specific challenges");
+        pathLore.add("§7for mastery progression");
+        pathLore.add("");
+        pathLore.add("§eClick to view");
+        pathMeta.setLore(pathLore);
+        pathContracts.setItemMeta(pathMeta);
         
         inv.setItem(11, daily);
         inv.setItem(13, weekly);
         inv.setItem(15, special);
+        inv.setItem(22, pathContracts);
         
         player.openInventory(inv);
     }
@@ -532,6 +548,113 @@ public class QuestManager {
         inv.setItem(49, back);
         
         player.openInventory(inv);
+    }
+
+    public void openPathQuests(Player player) {
+        Inventory inv = Bukkit.createInventory(null, 27, "§6§lPath Contracts");
+        PlayerData playerData = plugin.getPlayerData(player.getUniqueId());
+        QuestData qData = getQuestData(player.getUniqueId());
+
+        if (playerData.getMasteryPath() == MasteryPath.NONE) {
+            inv.setItem(13, createQuestItem("§7No Path Selected", "§7Choose one with /attack path choose", "§eNo rewards", false));
+        } else {
+            int target = getPathQuestTarget(playerData.getMasteryPath());
+            inv.setItem(13, createQuestItem(
+                "§6" + getPathQuestName(playerData.getMasteryPath()),
+                "§7" + qData.getPathQuestProgress() + "/" + target,
+                "§e+15k XP & +250 Mastery XP",
+                qData.isPathQuestCompleted()
+            ));
+        }
+
+        ItemStack back = new ItemStack(Material.ARROW);
+        ItemMeta backMeta = back.getItemMeta();
+        backMeta.setDisplayName("§cBack");
+        back.setItemMeta(backMeta);
+        inv.setItem(22, back);
+
+        player.openInventory(inv);
+    }
+
+    public void trackPathQuestKill(Player player, LivingEntity entity) {
+        PlayerData playerData = plugin.getPlayerData(player.getUniqueId());
+        if (playerData.getMasteryPath() == MasteryPath.NONE) {
+            return;
+        }
+
+        QuestData qData = getQuestData(player.getUniqueId());
+        if (qData.isPathQuestCompleted()) {
+            return;
+        }
+
+        if (!matchesPathQuestTarget(playerData.getMasteryPath(), entity)) {
+            return;
+        }
+
+        qData.setPathQuestProgress(qData.getPathQuestProgress() + 1);
+        int target = getPathQuestTarget(playerData.getMasteryPath());
+        if (qData.getPathQuestProgress() >= target) {
+            qData.setPathQuestCompleted(true);
+            plugin.getEventListener().grantXp(player, 15000, false);
+            plugin.getEventListener().grantMasteryXp(player, 250, true);
+            player.sendMessage("§6§lPath Contract Complete! §e+15,000 XP §7and §b+250 Mastery XP");
+        }
+
+        saveQuestData(player.getUniqueId());
+    }
+
+    public void initializeMasteryObjective(PlayerData data) {
+        if (data.getMasteryPath() == MasteryPath.NONE) {
+            data.setMasteryObjective("");
+            data.setMasteryObjectiveProgress(0);
+            data.setMasteryObjectiveTarget(0);
+            return;
+        }
+
+        int target = 12 + (data.getMasteryLevel() * 2);
+        data.setMasteryObjective(getPathObjectiveName(data.getMasteryPath()));
+        data.setMasteryObjectiveTarget(target);
+        data.setMasteryObjectiveProgress(Math.min(data.getMasteryObjectiveProgress(), target));
+    }
+
+    private String getPathObjectiveName(MasteryPath path) {
+        return switch (path) {
+            case SWORD -> "Sword Combo Trials";
+            case AXE -> "Axe Bleed Hunts";
+            case BOW -> "Archer Precision Contracts";
+            case CRIT -> "Critical Finisher Runs";
+            case NONE -> "";
+        };
+    }
+
+    private String getPathQuestName(MasteryPath path) {
+        return switch (path) {
+            case SWORD -> "Sword Vanguard Contract";
+            case AXE -> "Axe Trial Contract";
+            case BOW -> "Archer Contract";
+            case CRIT -> "Crit Execution Contract";
+            case NONE -> "No Contract";
+        };
+    }
+
+    private int getPathQuestTarget(MasteryPath path) {
+        return switch (path) {
+            case SWORD -> 40;
+            case AXE -> 25;
+            case BOW -> 30;
+            case CRIT -> 20;
+            case NONE -> 0;
+        };
+    }
+
+    private boolean matchesPathQuestTarget(MasteryPath path, LivingEntity entity) {
+        return switch (path) {
+            case SWORD -> entity instanceof org.bukkit.entity.Zombie || entity instanceof org.bukkit.entity.Skeleton;
+            case AXE -> entity instanceof org.bukkit.entity.Pillager || entity instanceof org.bukkit.entity.Vindicator || entity instanceof org.bukkit.entity.Evoker || entity instanceof org.bukkit.entity.Ravager;
+            case BOW -> entity instanceof org.bukkit.entity.Skeleton || entity instanceof org.bukkit.entity.Phantom || entity instanceof org.bukkit.entity.Ghast;
+            case CRIT -> entity instanceof org.bukkit.entity.Enderman || entity instanceof org.bukkit.entity.Blaze || entity instanceof org.bukkit.entity.Witch || entity instanceof org.bukkit.entity.Wither || entity instanceof org.bukkit.entity.Warden;
+            case NONE -> false;
+        };
     }
     
     private ItemStack createQuestItem(String name, String progress, String reward, boolean completed) {
