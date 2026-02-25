@@ -316,9 +316,10 @@ public class CommandHandler implements TabExecutor {
         pages.add(Component.text("§6§lMastery Paths\n\n§0At level 25, choose a path:\n§2Sword\n§4Axe\n§9Bow\n§5Crit\n\nUse: /attack path choose <path>"));
         pages.add(Component.text("§6§lPath Progress\n\n§0Use /attack path info to see mastery level and objective progress.\n\nComplete objectives/contracts for mastery XP."));
         pages.add(Component.text("§6§lPath Evolution\n\n§0Your path evolves at Attack levels:\n30, 60, 100, 150\n\nHigher tiers unlock stronger path mechanics."));
+        pages.add(Component.text("§6§lHow To See Contracts\n\n§01) Run /attack quest\n2) Click §6Path Contracts\n3) Follow the target kills shown in that menu\n\n§7Tip: Contracts depend on your selected path."));
+        pages.add(Component.text("§6§lWhat Contracts Are\n\n§0Contracts are path-specific challenges that speed up your build progression.\n\n§aRewards:\n- Attack XP\n- Mastery XP\n\nComplete them to power up faster."));
         pages.add(Component.text("§6§lRespec\n\n§0Want another build?\nUse /attack path respec\n\nIt costs attack levels, so choose carefully."));
         pages.add(Component.text("§6§lLeaderboard\n\n§0Check the right sidebar for your live stats and top players.\n\nClimb the leaderboard!\n"));
-        pages.add(Component.text("§6§lAdmin Commands\n\n§0/attack set <p> <lvl> [xp]\n/attack reset <p>\n/attack reload"));
 
         meta.addPages(pages.toArray(new Component[0]));
         book.setItemMeta(meta);
