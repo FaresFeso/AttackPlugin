@@ -11,6 +11,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
 
+@SuppressWarnings("deprecation")
 public class QuestManager {
     private final AttackMastery plugin;
     private final Map<UUID, QuestData> questDataMap = new HashMap<>();
@@ -559,10 +560,12 @@ public class QuestManager {
             inv.setItem(13, createQuestItem("§7No Path Selected", "§7Choose one with /attack path choose", "§eNo rewards", false));
         } else {
             int target = getPathQuestTarget(playerData.getMasteryPath());
+            int tier = PathEvolution.tierForAttackLevel(playerData.getLevel());
+            int scaledTarget = target + (tier * 5);
             inv.setItem(13, createQuestItem(
                 "§6" + getPathQuestName(playerData.getMasteryPath()),
-                "§7" + qData.getPathQuestProgress() + "/" + target,
-                "§e+15k XP & +250 Mastery XP",
+                "§7" + qData.getPathQuestProgress() + "/" + scaledTarget,
+                "§e+" + (15000 + (tier * 2500)) + " XP & +" + (250 + (tier * 40)) + " Mastery XP",
                 qData.isPathQuestCompleted()
             ));
         }
@@ -593,11 +596,15 @@ public class QuestManager {
 
         qData.setPathQuestProgress(qData.getPathQuestProgress() + 1);
         int target = getPathQuestTarget(playerData.getMasteryPath());
-        if (qData.getPathQuestProgress() >= target) {
+        int tier = PathEvolution.tierForAttackLevel(playerData.getLevel());
+        int scaledTarget = target + (tier * 5);
+        if (qData.getPathQuestProgress() >= scaledTarget) {
             qData.setPathQuestCompleted(true);
-            plugin.getEventListener().grantXp(player, 15000, false);
-            plugin.getEventListener().grantMasteryXp(player, 250, true);
-            player.sendMessage("§6§lPath Contract Complete! §e+15,000 XP §7and §b+250 Mastery XP");
+            int xpReward = 15000 + (tier * 2500);
+            int masteryReward = 250 + (tier * 40);
+            plugin.getEventListener().grantXp(player, xpReward, false);
+            plugin.getEventListener().grantMasteryXp(player, masteryReward, true);
+            player.sendMessage("§6§lPath Contract Complete! §e+" + xpReward + " XP §7and §b+" + masteryReward + " Mastery XP");
         }
 
         saveQuestData(player.getUniqueId());
@@ -611,18 +618,19 @@ public class QuestManager {
             return;
         }
 
-        int target = 12 + (data.getMasteryLevel() * 2);
-        data.setMasteryObjective(getPathObjectiveName(data.getMasteryPath()));
+        int tier = PathEvolution.tierForAttackLevel(data.getLevel());
+        int target = 12 + (data.getMasteryLevel() * 2) + (tier * 2);
+        data.setMasteryObjective(getPathObjectiveName(data.getMasteryPath(), tier));
         data.setMasteryObjectiveTarget(target);
         data.setMasteryObjectiveProgress(Math.min(data.getMasteryObjectiveProgress(), target));
     }
 
-    private String getPathObjectiveName(MasteryPath path) {
+    private String getPathObjectiveName(MasteryPath path, int tier) {
         return switch (path) {
-            case SWORD -> "Sword Combo Trials";
-            case AXE -> "Axe Bleed Hunts";
-            case BOW -> "Archer Precision Contracts";
-            case CRIT -> "Critical Finisher Runs";
+            case SWORD -> tier >= 3 ? "Sword Finisher Waves" : tier >= 2 ? "Sword Carry Combos" : "Sword Combo Trials";
+            case AXE -> tier >= 3 ? "Axe Boss Shatter Hunts" : tier >= 2 ? "Axe Spread Bleed Hunts" : "Axe Bleed Hunts";
+            case BOW -> tier >= 3 ? "Archer Mark Burst Contracts" : tier >= 2 ? "Archer Streak Contracts" : "Archer Precision Contracts";
+            case CRIT -> tier >= 3 ? "Critical Chain Executions" : tier >= 2 ? "Critical Momentum Runs" : "Critical Finisher Runs";
             case NONE -> "";
         };
     }

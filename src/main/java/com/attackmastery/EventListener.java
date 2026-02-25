@@ -287,6 +287,10 @@ public class EventListener implements Listener {
         updateBossBar(player, data);
         updateSidebar(player, data);
     }
+
+    public String getEvolutionLabel(PlayerData data) {
+        return PathEvolution.tierName(PathEvolution.tierForAttackLevel(data.getLevel()));
+    }
     
     private double calculateXpNeeded(int level) {
         int base = plugin.getConfig().getInt("xp-base", 200);
@@ -377,11 +381,14 @@ public class EventListener implements Listener {
     private void applyMasteryPerks(EntityDamageByEntityEvent event, Player player, LivingEntity target, PlayerData data) {
         if (data.getMasteryPath() == MasteryPath.NONE) {
             data.setComboHits(0);
+            data.setPrecisionStreak(0);
+            data.setCritMomentum(0);
             return;
         }
 
         Material mainHand = player.getInventory().getItemInMainHand().getType();
         boolean projectileAttack = event.getDamager() instanceof Projectile;
+        int tier = PathEvolution.tierForAttackLevel(data.getLevel());
 
         switch (data.getMasteryPath()) {
             case SWORD -> {
@@ -389,7 +396,22 @@ public class EventListener implements Listener {
                     int newCombo = Math.min(data.getComboHits() + 1, 6);
                     data.setComboHits(newCombo);
                     double chainBonus = newCombo * plugin.getConfig().getDouble("mastery.sword.chain-bonus-per-hit", 0.04);
+                    chainBonus += tier * 0.01;
                     event.setDamage(event.getDamage() * (1.0 + chainBonus));
+
+                    if (tier >= 2 && newCombo >= 4) {
+                        double splash = event.getDamage() * 0.20;
+                        for (LivingEntity nearby : target.getLocation().getNearbyLivingEntities(2.5)) {
+                            if (nearby.equals(target) || nearby.equals(player)) continue;
+                            nearby.damage(splash, player);
+                        }
+                    }
+
+                    if (tier >= 3 && newCombo >= 6) {
+                        event.setDamage(event.getDamage() * 1.25);
+                        target.getWorld().spawnParticle(Particle.SWEEP_ATTACK, target.getLocation().add(0, 1, 0), 18, 0.4, 0.3, 0.4, 0.05);
+                        data.setComboHits(0);
+                    }
                 } else {
                     data.setComboHits(0);
                 }
@@ -399,8 +421,20 @@ public class EventListener implements Listener {
                     double chance = plugin.getConfig().getDouble("mastery.axe.bleed-chance", 0.25);
                     if (ThreadLocalRandom.current().nextDouble() <= chance) {
                         double bleedBonus = event.getDamage() * plugin.getConfig().getDouble("mastery.axe.bleed-bonus-damage-multiplier", 0.20);
+                        bleedBonus *= (1.0 + (tier * 0.12));
                         event.setDamage(event.getDamage() + bleedBonus);
                         target.getWorld().spawnParticle(Particle.DAMAGE_INDICATOR, target.getLocation().add(0, 1, 0), 10, 0.3, 0.3, 0.3, 0.02);
+
+                        if (tier >= 2) {
+                            for (LivingEntity nearby : target.getLocation().getNearbyLivingEntities(2.0)) {
+                                if (nearby.equals(target) || nearby.equals(player)) continue;
+                                nearby.damage(bleedBonus * 0.35, player);
+                            }
+                        }
+
+                        if (tier >= 3 && isElite(target)) {
+                            event.setDamage(event.getDamage() * 1.20);
+                        }
                     }
                 }
             }
@@ -410,21 +444,55 @@ public class EventListener implements Listener {
                     double precisionDistance = plugin.getConfig().getDouble("mastery.bow.precision-distance", 18.0);
                     if (distance >= precisionDistance) {
                         double precisionBonus = plugin.getConfig().getDouble("mastery.bow.precision-bonus", 0.25);
-                        event.setDamage(event.getDamage() * (1.0 + precisionBonus));
+                        int streak = Math.min(5, data.getPrecisionStreak() + 1);
+                        data.setPrecisionStreak(streak);
+                        event.setDamage(event.getDamage() * (1.0 + precisionBonus + (tier * 0.04)));
+
+                        if (tier >= 2 && streak >= 2) {
+                            event.setDamage(event.getDamage() * (1.0 + (streak * 0.06)));
+                        }
+
+                        if (tier >= 3 && streak >= 3) {
+                            event.setDamage(event.getDamage() * 1.30);
+                            target.getWorld().spawnParticle(Particle.FIREWORK, target.getLocation().add(0, 1, 0), 16, 0.4, 0.3, 0.4, 0.02);
+                            data.setPrecisionStreak(0);
+                        }
+                    } else {
+                        data.setPrecisionStreak(0);
                     }
+                } else {
+                    data.setPrecisionStreak(0);
                 }
             }
             case CRIT -> {
-                double executeThreshold = plugin.getConfig().getDouble("mastery.crit.execute-threshold", 0.30);
-                if (healthPercent(target) <= executeThreshold) {
+                double executeThreshold = plugin.getConfig().getDouble("mastery.crit.execute-threshold", 0.30)
+                    + (data.getCritMomentum() * 0.02);
+                executeThreshold = Math.min(executeThreshold, 0.55);
+
+                boolean executeWindow = healthPercent(target) <= executeThreshold;
+                if (executeWindow) {
                     double executeBonus = plugin.getConfig().getDouble("mastery.crit.execute-bonus", 0.35);
+                    executeBonus += tier * 0.08;
                     event.setDamage(event.getDamage() * (1.0 + executeBonus));
+                    data.setCritMomentum(Math.min(5, data.getCritMomentum() + 1));
                 }
-                double critChance = plugin.getConfig().getDouble("mastery.crit.random-crit-chance", 0.20);
+
+                double critChance = plugin.getConfig().getDouble("mastery.crit.random-crit-chance", 0.20)
+                    + (data.getCritMomentum() * 0.03);
                 if (ThreadLocalRandom.current().nextDouble() <= critChance) {
                     double critMult = plugin.getConfig().getDouble("mastery.crit.random-crit-multiplier", 1.60);
+                    if (tier >= 2) critMult += 0.15;
                     event.setDamage(event.getDamage() * critMult);
                     target.getWorld().spawnParticle(Particle.CRIT, target.getLocation().add(0, 1, 0), 15, 0.3, 0.3, 0.3, 0.05);
+                    if (!executeWindow) {
+                        data.setCritMomentum(Math.min(5, data.getCritMomentum() + 1));
+                    }
+                } else if (!executeWindow) {
+                    data.setCritMomentum(Math.max(0, data.getCritMomentum() - 1));
+                }
+
+                if (tier >= 3 && data.getCritMomentum() >= 4) {
+                    event.setDamage(event.getDamage() * 1.20);
                 }
             }
             case NONE -> {
@@ -528,6 +596,15 @@ public class EventListener implements Listener {
 
     private boolean isBow(Material material) {
         return material == Material.BOW || material == Material.CROSSBOW;
+    }
+
+    private boolean isElite(LivingEntity entity) {
+        return entity instanceof Warden
+            || entity instanceof Wither
+            || entity instanceof EnderDragon
+            || entity instanceof ElderGuardian
+            || entity instanceof Ravager
+            || entity instanceof Evoker;
     }
 
     private double healthPercent(LivingEntity entity) {

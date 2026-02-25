@@ -16,6 +16,8 @@ public class PlayerData {
     private int masteryRespecs;
     private String cosmeticTitle;
     private int comboHits;
+    private int precisionStreak;
+    private int critMomentum;
     
     public PlayerData(int level, double xp) {
         this.level = level;
@@ -31,6 +33,8 @@ public class PlayerData {
         this.masteryRespecs = 0;
         this.cosmeticTitle = "";
         this.comboHits = 0;
+        this.precisionStreak = 0;
+        this.critMomentum = 0;
     }
     
     public int getLevel() { return level; }
@@ -71,4 +75,10 @@ public class PlayerData {
 
     public int getComboHits() { return comboHits; }
     public void setComboHits(int comboHits) { this.comboHits = comboHits; }
+
+    public int getPrecisionStreak() { return precisionStreak; }
+    public void setPrecisionStreak(int precisionStreak) { this.precisionStreak = precisionStreak; }
+
+    public int getCritMomentum() { return critMomentum; }
+    public void setCritMomentum(int critMomentum) { this.critMomentum = critMomentum; }
 }

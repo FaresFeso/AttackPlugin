@@ -167,6 +167,7 @@ public class CommandHandler implements TabExecutor {
         sender.sendMessage("§eDamage Bonus: §f+" + String.format("%.1f", damagePercent) + "%");
         sender.sendMessage("§eHealth Bonus: §f+" + Math.min(data.getLevel() / 10, 10) + " Hearts (Max: 10)");
         sender.sendMessage("§ePath: §f" + data.getMasteryPath().displayName() + " §7(Mastery Lv." + data.getMasteryLevel() + ")");
+        sender.sendMessage("§eEvolution Tier: §f" + plugin.getEventListener().getEvolutionLabel(data));
         if (!data.getCosmeticTitle().isBlank()) {
             sender.sendMessage("§eTitle: §f" + data.getCosmeticTitle());
         }
@@ -190,6 +191,7 @@ public class CommandHandler implements TabExecutor {
             player.sendMessage("§ePath: §f" + data.getMasteryPath().displayName());
             player.sendMessage("§eMastery Level: §f" + data.getMasteryLevel());
             player.sendMessage("§eMastery XP: §f" + String.format("%.1f", data.getMasteryXp()));
+            player.sendMessage("§eEvolution Tier: §f" + plugin.getEventListener().getEvolutionLabel(data));
             if (data.getMasteryPath() != MasteryPath.NONE && data.getMasteryObjectiveTarget() > 0) {
                 player.sendMessage("§eObjective: §f" + data.getMasteryObjective() + " §7(" + data.getMasteryObjectiveProgress() + "/" + data.getMasteryObjectiveTarget() + ")");
             }
@@ -313,6 +315,7 @@ public class CommandHandler implements TabExecutor {
         pages.add(Component.text("§6§lGetting Started\n\n§0- /attack\nView your stats\n\n- /attack quest\nOpen quest menu\n\n- /attack help\nOpen this guide"));
         pages.add(Component.text("§6§lMastery Paths\n\n§0At level 25, choose a path:\n§2Sword\n§4Axe\n§9Bow\n§5Crit\n\nUse: /attack path choose <path>"));
         pages.add(Component.text("§6§lPath Progress\n\n§0Use /attack path info to see mastery level and objective progress.\n\nComplete objectives/contracts for mastery XP."));
+        pages.add(Component.text("§6§lPath Evolution\n\n§0Your path evolves at Attack levels:\n30, 60, 100, 150\n\nHigher tiers unlock stronger path mechanics."));
         pages.add(Component.text("§6§lRespec\n\n§0Want another build?\nUse /attack path respec\n\nIt costs attack levels, so choose carefully."));
         pages.add(Component.text("§6§lLeaderboard\n\n§0Check the right sidebar for your live stats and top players.\n\nClimb the leaderboard!\n"));
         pages.add(Component.text("§6§lAdmin Commands\n\n§0/attack set <p> <lvl> [xp]\n/attack reset <p>\n/attack reload"));
